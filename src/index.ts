@@ -16,34 +16,40 @@ const SERVER_VERSION = '1.0.0';
 
 const log = createLogger(SERVER_NAME);
 
+// Shared wallet instance (created once at startup)
+let sharedWallet: MidlWalletClient;
+
+/** Create a new MCP server instance with all plugins registered */
+function createServer(): McpServer {
+  const server = new McpServer({
+    name: SERVER_NAME,
+    version: SERVER_VERSION,
+  });
+  registerAllPlugins(server, sharedWallet);
+  return server;
+}
+
 /** Initialize and start the MCP server */
 async function main(): Promise<void> {
-  // Validate environment and create wallet
-  let wallet: MidlWalletClient;
+  // Validate environment and create wallet (once)
   try {
-    wallet = createWalletFromEnv();
-    log.info(`Wallet initialized: ${wallet.address}`);
+    sharedWallet = createWalletFromEnv();
+    log.info(`Wallet initialized: ${sharedWallet.address}`);
   } catch (err) {
     log.error('Failed to initialize wallet', err);
     process.exit(1);
   }
 
-  // Create MCP server
-  const server = new McpServer({
-    name: SERVER_NAME,
-    version: SERVER_VERSION,
-  });
-
-  // Register all plugins
-  registerAllPlugins(server, wallet);
-
   // Start with configured transport
   const transport = getTransportMode();
 
   if (transport === 'stdio') {
+    // Stdio: single server instance
+    const server = createServer();
     await startStdio(server);
   } else {
-    await startHttp(server);
+    // HTTP: server created per request
+    await startHttp();
   }
 }
 
@@ -55,7 +61,7 @@ async function startStdio(server: McpServer): Promise<void> {
 }
 
 /** Start server with HTTP transport (for web/remote clients) */
-async function startHttp(server: McpServer): Promise<void> {
+async function startHttp(): Promise<void> {
   const port = getHttpPort();
 
   // Dynamic import to avoid loading express for stdio mode
@@ -63,21 +69,43 @@ async function startHttp(server: McpServer): Promise<void> {
   const { StreamableHTTPServerTransport } = await import(
     '@modelcontextprotocol/sdk/server/streamableHttp.js'
   );
-  const { randomUUID } = await import('crypto');
 
   const app = express();
   app.use(express.json());
 
-  const transport = new StreamableHTTPServerTransport({
-    sessionIdGenerator: () => randomUUID(),
-  });
-
+  // Stateless mode: create new server + transport per request
   app.post('/mcp', async (req, res) => {
-    await transport.handleRequest(req, res, req.body);
+    try {
+      const server = createServer();
+      const transport = new StreamableHTTPServerTransport({
+        sessionIdGenerator: undefined,
+      });
+      await server.connect(transport);
+      await transport.handleRequest(req, res, req.body);
+      await server.close();
+    } catch (err) {
+      log.error('MCP request failed', err);
+      if (!res.headersSent) {
+        res.status(500).json({ error: 'Internal server error' });
+      }
+    }
   });
 
   app.get('/mcp', async (req, res) => {
-    await transport.handleRequest(req, res);
+    try {
+      const server = createServer();
+      const transport = new StreamableHTTPServerTransport({
+        sessionIdGenerator: undefined,
+      });
+      await server.connect(transport);
+      await transport.handleRequest(req, res);
+      await server.close();
+    } catch (err) {
+      log.error('MCP request failed', err);
+      if (!res.headersSent) {
+        res.status(500).json({ error: 'Internal server error' });
+      }
+    }
   });
 
   // Health check endpoint
@@ -85,11 +113,24 @@ async function startHttp(server: McpServer): Promise<void> {
     res.json({ status: 'ok', server: SERVER_NAME, version: SERVER_VERSION });
   });
 
-  await server.connect(transport);
-
-  app.listen(port, () => {
+  // Start HTTP server
+  const httpServer = app.listen(port, () => {
     log.info(`Running on http://localhost:${port}`);
   });
+
+  // Keep process alive with interval (cleared on shutdown)
+  const keepAlive = setInterval(() => {}, 1000 * 60 * 60);
+
+  // Graceful shutdown
+  const shutdown = () => {
+    clearInterval(keepAlive);
+    httpServer.close(() => process.exit(0));
+  };
+  process.on('SIGTERM', shutdown);
+  process.on('SIGINT', shutdown);
+
+  // Wait for server close
+  await new Promise<void>((resolve) => httpServer.on('close', resolve));
 }
 
 // Run
