@@ -11,7 +11,6 @@ import {
   type Config,
   connect,
   edictRune,
-  broadcastTransaction,
   type EdictRuneParams,
   type EdictRuneResponse,
 } from '@midl/core';
@@ -139,18 +138,23 @@ export class MidlBtcWalletClient {
     // Finalize BTC transaction (calculates fees, creates PSBT)
     const btcTx = await finalizeBTCTransaction(this.config, [intention], evmClient);
 
-    // Sign the intentions
-    await signIntentions(this.config, evmClient, [intention], {
+    // Sign the intentions - returns signed EVM transactions
+    const signedTransactions = await signIntentions(this.config, evmClient, [intention], {
       txId: btcTx.tx.id,
     });
 
-    // Broadcast the BTC transaction
-    const txId = await broadcastTransaction(this.config, btcTx.tx.hex);
+    // Submit BOTH BTC tx AND signed intentions to MIDL validators
+    // This is critical - broadcastTransaction only sends to BTC mempool
+    // sendBTCTransactions submits to validators who process the bridge
+    await evmClient.sendBTCTransactions({
+      btcTransaction: btcTx.tx.hex,
+      serializedTransactions: signedTransactions,
+    });
 
-    log.info(`BTC deposit broadcast: txId=${txId}`);
+    log.info(`BTC deposit submitted to MIDL: txId=${btcTx.tx.id}`);
 
     return {
-      btcTxId: txId,
+      btcTxId: btcTx.tx.id,
       btcTxHex: btcTx.tx.hex,
     };
   }
@@ -185,18 +189,21 @@ export class MidlBtcWalletClient {
     // Finalize BTC transaction
     const btcTx = await finalizeBTCTransaction(this.config, [intention], evmClient);
 
-    // Sign the intentions
-    await signIntentions(this.config, evmClient, [intention], {
+    // Sign the intentions - returns signed EVM transactions
+    const signedTransactions = await signIntentions(this.config, evmClient, [intention], {
       txId: btcTx.tx.id,
     });
 
-    // Broadcast the BTC transaction
-    const txId = await broadcastTransaction(this.config, btcTx.tx.hex);
+    // Submit BOTH BTC tx AND signed intentions to MIDL validators
+    await evmClient.sendBTCTransactions({
+      btcTransaction: btcTx.tx.hex,
+      serializedTransactions: signedTransactions,
+    });
 
-    log.info(`Rune bridge broadcast: txId=${txId}`);
+    log.info(`Rune bridge submitted to MIDL: txId=${btcTx.tx.id}`);
 
     return {
-      btcTxId: txId,
+      btcTxId: btcTx.tx.id,
       btcTxHex: btcTx.tx.hex,
     };
   }
@@ -226,18 +233,21 @@ export class MidlBtcWalletClient {
     // Finalize BTC transaction
     const btcTx = await finalizeBTCTransaction(this.config, [intention], evmClient);
 
-    // Sign the intentions
-    await signIntentions(this.config, evmClient, [intention], {
+    // Sign the intentions - returns signed EVM transactions
+    const signedTransactions = await signIntentions(this.config, evmClient, [intention], {
       txId: btcTx.tx.id,
     });
 
-    // Broadcast the BTC transaction
-    const txId = await broadcastTransaction(this.config, btcTx.tx.hex);
+    // Submit BOTH BTC tx AND signed intentions to MIDL validators
+    await evmClient.sendBTCTransactions({
+      btcTransaction: btcTx.tx.hex,
+      serializedTransactions: signedTransactions,
+    });
 
-    log.info(`EVM withdrawal broadcast: txId=${txId}`);
+    log.info(`EVM withdrawal submitted to MIDL: txId=${btcTx.tx.id}`);
 
     return {
-      btcTxId: txId,
+      btcTxId: btcTx.tx.id,
       btcTxHex: btcTx.tx.hex,
     };
   }
