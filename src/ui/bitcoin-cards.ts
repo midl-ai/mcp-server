@@ -147,3 +147,80 @@ export function createLogsCard(
     encoding: 'text',
   });
 }
+
+/** Create a Bitcoin transaction info card */
+export function createBtcTxCard(
+  txid: string,
+  confirmed: boolean,
+  fee: number,
+  inputCount: number,
+  outputCount: number,
+  explorerUrl: string
+): ReturnType<typeof createUIResource> {
+  const statusColor = confirmed ? '#22c55e' : '#f59e0b';
+  const statusText = confirmed ? 'Confirmed' : 'Pending';
+
+  const html = `
+    <div style="${BASE_STYLES}">
+      <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px;">
+        <span style="color: ${statusColor}; font-size: 10px;">●</span>
+        <span style="font-size: 11px; opacity: 0.6; text-transform: uppercase;">${statusText}</span>
+      </div>
+      <div style="font-size: 11px; opacity: 0.5; margin-bottom: 4px;">Transaction ID</div>
+      <div style="font-size: 12px; font-family: monospace; word-break: break-all;">${shortenAddress(txid, 12)}</div>
+      <div style="margin-top: 16px; display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px;">
+        <div>
+          <div style="font-size: 11px; opacity: 0.5; margin-bottom: 4px;">Fee</div>
+          <div style="font-size: 14px; font-weight: 500;">${formatNumber(fee)} sat</div>
+        </div>
+        <div>
+          <div style="font-size: 11px; opacity: 0.5; margin-bottom: 4px;">Inputs</div>
+          <div style="font-size: 14px; font-weight: 500;">${inputCount}</div>
+        </div>
+        <div>
+          <div style="font-size: 11px; opacity: 0.5; margin-bottom: 4px;">Outputs</div>
+          <div style="font-size: 14px; font-weight: 500;">${outputCount}</div>
+        </div>
+      </div>
+      <a href="${explorerUrl}" style="display: block; margin-top: 12px; color: #60a5fa; text-decoration: none; font-size: 11px;">View on Mempool ↗</a>
+    </div>
+  `;
+
+  return createUIResource({
+    uri: `ui://btc-tx/${txid}`,
+    content: { type: 'rawHtml', htmlString: html },
+    encoding: 'text',
+  });
+}
+
+/** Create a contract verification result card */
+export function createVerifyCard(
+  address: string,
+  verified: boolean,
+  message: string,
+  explorerUrl: string
+): ReturnType<typeof createUIResource> {
+  const statusColor = verified ? '#22c55e' : '#ef4444';
+  const statusIcon = verified ? '✓' : '✗';
+
+  const html = `
+    <div style="${BASE_STYLES}">
+      <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px;">
+        <span style="color: ${statusColor}; font-size: 20px;">${statusIcon}</span>
+        <span style="font-size: 11px; opacity: 0.6; text-transform: uppercase;">Contract Verification</span>
+      </div>
+      <div style="font-size: 14px; margin-bottom: 16px;">${message}</div>
+      <div>
+        <div style="font-size: 11px; opacity: 0.5; margin-bottom: 4px;">Contract Address</div>
+        <div style="font-size: 12px; font-family: monospace;">${shortenAddress(address, 8)}</div>
+      </div>
+      <a href="${explorerUrl}" style="display: block; margin-top: 12px; color: #60a5fa; text-decoration: none; font-size: 11px;">View on Blockscout ↗</a>
+    </div>
+  `;
+
+  return createUIResource({
+    uri: `ui://verify/${address}`,
+    content: { type: 'rawHtml', htmlString: html },
+    encoding: 'text',
+  });
+}

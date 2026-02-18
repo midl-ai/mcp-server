@@ -121,4 +121,6 @@ export type {
   FeeRateResult,
   GetLogsResult,
   RuneAddressResult,
+  TxInfo,
+  VerifyResult,
 } from './result-types.js';

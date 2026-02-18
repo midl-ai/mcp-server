@@ -29,6 +29,8 @@ import type {
   FeeRateResult,
   GetLogsResult,
   RuneAddressResult,
+  TxInfo,
+  VerifyResult,
 } from '../types.js';
 import {
   createBalanceCard,
@@ -55,6 +57,8 @@ import {
   createFeeRateCard,
   createRuneErc20AddressCard,
   createLogsCard,
+  createBtcTxCard,
+  createVerifyCard,
 } from './bitcoin-cards.js';
 import { getNetworkConfig } from '../config.js';
 
@@ -266,6 +270,20 @@ const cardGenerators: Record<string, CardGenerator> = {
     return createTxReceiptCard(
       data.transactionHash, data.status, data.blockNumber, data.gasUsed, data.explorerUrl
     ) as ContentItem;
+  },
+
+  midl_get_transaction: (result, _explorerUrl) => {
+    if (!result.success) return null;
+    const data = result.data as TxInfo;
+    return createBtcTxCard(
+      data.txid, data.status.confirmed, data.fee, data.vin.length, data.vout.length, data.explorerUrl
+    ) as ContentItem;
+  },
+
+  midl_verify_contract: (result, _explorerUrl) => {
+    if (!result.success) return null;
+    const data = result.data as VerifyResult;
+    return createVerifyCard(data.address, data.verified, data.message, data.explorerUrl) as ContentItem;
   },
 };
 

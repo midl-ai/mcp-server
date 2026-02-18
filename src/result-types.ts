@@ -280,3 +280,28 @@ export interface RuneAddressResult {
   erc20Address: string;
   explorerUrl: string;
 }
+
+/**
+ * Bitcoin transaction info
+ */
+export interface TxInfo {
+  txid: string;
+  version: number;
+  size: number;
+  weight: number;
+  fee: number;
+  status: { confirmed: boolean; block_height?: number; block_time?: number };
+  vin: Array<{ txid: string; vout: number; prevout?: { value: number } }>;
+  vout: Array<{ value: number; scriptpubkey_address?: string }>;
+  explorerUrl: string;
+}
+
+/**
+ * Contract verification result
+ */
+export interface VerifyResult {
+  address: string;
+  verified: boolean;
+  explorerUrl: string;
+  message: string;
+}
