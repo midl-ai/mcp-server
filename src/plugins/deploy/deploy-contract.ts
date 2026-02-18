@@ -1,7 +1,9 @@
 /**
  * Tool: midl_deploy_contract
- * Deploy smart contracts using built-in templates (ERC20, Counter, etc.)
- * No Solidity knowledge required - just provide template name and parameters
+ * Deploy smart contracts using:
+ * 1. Built-in templates (ERC20, Counter) - recommended for most users
+ * 2. Custom Solidity source code - for advanced users
+ * 3. Pre-compiled ABI + bytecode - for maximum flexibility
  */
 
 import { z } from 'zod';
@@ -16,30 +18,43 @@ const log = createLogger('deploy-contract');
 
 const templateList = getTemplateNames().join(', ');
 
-const schema = z.object({
-  template: z
-    .string()
-    .describe(`Contract template to deploy. Available: ${templateList}`),
-  name: z.string().optional().describe('Token/contract name (for ERC20 template)'),
-  symbol: z.string().optional().describe('Token symbol (for ERC20 template)'),
-  initialSupply: z.string().optional().describe('Initial token supply (for ERC20 template)'),
-});
+const schema = z
+  .object({
+    // Option 1: Template-based (recommended)
+    template: z.string().optional().describe(`Template name: ${templateList}`),
+    name: z.string().optional().describe('Token name (for ERC20)'),
+    symbol: z.string().optional().describe('Token symbol (for ERC20)'),
+    initialSupply: z.string().optional().describe('Initial supply (for ERC20)'),
+    // Option 2: Custom Solidity source
+    source: z.string().optional().describe('Solidity source code'),
+    contractName: z.string().optional().describe('Contract name in source'),
+    // Option 3: Pre-compiled
+    abi: z.array(z.unknown()).optional().describe('Pre-compiled ABI'),
+    bytecode: z.string().optional().describe('Pre-compiled bytecode (0x...)'),
+    // Common
+    constructorArgs: z.array(z.unknown()).default([]).describe('Constructor arguments'),
+  })
+  .refine(
+    (d) => d.template || (d.source && d.contractName) || (d.abi && d.bytecode),
+    { message: 'Provide template, source+contractName, or abi+bytecode' }
+  );
 
 type Input = z.infer<typeof schema>;
 
 const config: ToolConfig = {
   name: 'deploy_contract',
   description:
-    `Deploy a smart contract using built-in templates. No Solidity code needed. ` +
-    `Available templates: ${templateList}. ` +
-    `For ERC20: provide name, symbol, and initialSupply. ` +
-    `For counter/storage: just provide the template name.`,
+    `Deploy a smart contract. Three options:\n` +
+    `1. Template (easiest): template="erc20" + name, symbol, initialSupply\n` +
+    `2. Source code: source="pragma solidity..." + contractName\n` +
+    `3. Pre-compiled: abi + bytecode\n` +
+    `Templates: ${templateList}`,
   schema,
   readOnly: false,
   destructive: true,
 };
 
-/** Compile Solidity source code using solc */
+/** Compile Solidity source code */
 function compileSolidity(
   sourceCode: string,
   contractName: string
@@ -54,8 +69,8 @@ function compileSolidity(
   };
 
   const output = JSON.parse(solc.compile(JSON.stringify(input)));
-
   const errors = output.errors?.filter((e: { severity: string }) => e.severity === 'error') ?? [];
+
   if (errors.length > 0) {
     const msgs = errors.map((e: { formattedMessage: string }) => e.formattedMessage).join('\n');
     throw new Error(`Compilation failed:\n${msgs}`);
@@ -83,24 +98,44 @@ export class DeployContractTool extends ToolBase<Input, DeployResult> {
 
   async execute(input: Input): Promise<ToolResponse<DeployResult>> {
     try {
-      // Generate source from template
-      log.info(`Generating contract from template: ${input.template}`);
-      const { source, contractName } = generateFromTemplate(input.template, {
-        name: input.name,
-        symbol: input.symbol,
-        initialSupply: input.initialSupply,
-      });
+      let abi: unknown[];
+      let bytecode: string;
+      let args = input.constructorArgs;
 
-      // Compile
-      log.info(`Compiling contract: ${contractName}`);
-      const { abi, bytecode } = compileSolidity(source, contractName);
+      // Option 1: Template
+      if (input.template) {
+        log.info(`Using template: ${input.template}`);
+        const { source, contractName } = generateFromTemplate(input.template, {
+          name: input.name,
+          symbol: input.symbol,
+          initialSupply: input.initialSupply,
+        });
+        const compiled = compileSolidity(source, contractName);
+        abi = compiled.abi;
+        bytecode = compiled.bytecode;
+        args = []; // Templates have hardcoded constructor values
+      }
+      // Option 2: Custom source
+      else if (input.source && input.contractName) {
+        log.info(`Compiling custom source: ${input.contractName}`);
+        const compiled = compileSolidity(input.source, input.contractName);
+        abi = compiled.abi;
+        bytecode = compiled.bytecode;
+      }
+      // Option 3: Pre-compiled
+      else if (input.abi && input.bytecode) {
+        log.info('Using pre-compiled ABI and bytecode');
+        abi = input.abi;
+        bytecode = input.bytecode;
+      } else {
+        return error(ErrorCode.INVALID_ABI, 'Provide template, source+contractName, or abi+bytecode');
+      }
 
-      // Deploy
       log.info('Deploying contract...');
       const result = await this.wallet.deployContract(
         abi as readonly unknown[],
         bytecode as `0x${string}`,
-        [] // Templates use parameterless constructors with hardcoded values
+        args as readonly unknown[]
       );
 
       if (!result.success) {
@@ -118,7 +153,7 @@ export class DeployContractTool extends ToolBase<Input, DeployResult> {
       });
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Unknown error';
-      log.error(`Contract deployment failed: ${message}`);
+      log.error(`Deployment failed: ${message}`);
       return error(ErrorCode.TX_REVERTED, `Deployment failed: ${message}`);
     }
   }

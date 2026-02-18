@@ -144,6 +144,128 @@ export function createSystemContractsCard(
   });
 }
 
+/** Create a runes portfolio table card (FR38) */
+export function createRunesPortfolioCard(
+  address: string,
+  runes: Array<{ runeId: string; name: string; symbol: string; amount: string }>,
+  mempoolUrl: string
+): ReturnType<typeof createUIResource> {
+  const rows = runes
+    .map(
+      (r) => `
+    <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
+      <td style="padding: 8px 12px 8px 0; font-weight: 500;">${r.name}</td>
+      <td style="padding: 8px 0; font-family: monospace;">${formatNumber(r.amount)} ${r.symbol}</td>
+      <td style="padding: 8px 0; font-size: 11px; opacity: 0.6;">${r.runeId}</td>
+    </tr>
+  `
+    )
+    .join('');
+
+  const html = `
+    <div style="${BASE_STYLES}">
+      <div style="font-size: 11px; opacity: 0.6; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px;">
+        Runes Portfolio
+      </div>
+      <div style="font-size: 13px; font-family: monospace; opacity: 0.7; margin-bottom: 16px;">
+        ${shortenAddress(address, 8)}
+      </div>
+      <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
+        <thead>
+          <tr style="border-bottom: 1px solid rgba(255,255,255,0.1); opacity: 0.5;">
+            <th style="text-align: left; padding: 8px 12px 8px 0; font-weight: 400;">Name</th>
+            <th style="text-align: left; padding: 8px 0; font-weight: 400;">Balance</th>
+            <th style="text-align: left; padding: 8px 0; font-weight: 400;">ID</th>
+          </tr>
+        </thead>
+        <tbody>${rows}</tbody>
+      </table>
+      <div style="margin-top: 12px; font-size: 11px;">
+        <a href="${mempoolUrl}/address/${address}" style="color: #60a5fa; text-decoration: none;">View on Mempool ↗</a>
+      </div>
+    </div>
+  `;
+
+  return createUIResource({
+    uri: `ui://runes-portfolio/${address}`,
+    content: { type: 'rawHtml', htmlString: html },
+    encoding: 'text',
+  });
+}
+
+/** Create a token balance card */
+export function createTokenBalanceCard(
+  tokenName: string,
+  tokenSymbol: string,
+  balance: string,
+  ownerAddress: string,
+  tokenAddress: string,
+  explorerUrl: string
+): ReturnType<typeof createUIResource> {
+  const html = `
+    <div style="${BASE_STYLES}">
+      <div style="font-size: 11px; opacity: 0.6; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px;">
+        Token Balance
+      </div>
+      <div style="font-size: 28px; font-weight: 600; font-family: 'SF Mono', monospace;">
+        ${formatNumber(balance)} ${tokenSymbol}
+      </div>
+      <div style="font-size: 14px; opacity: 0.7; margin-top: 4px;">${tokenName}</div>
+      <div style="margin-top: 16px; padding-top: 16px; border-top: 1px solid rgba(255,255,255,0.1);">
+        <div style="font-size: 11px; opacity: 0.5; margin-bottom: 4px;">Owner</div>
+        <div style="font-size: 12px; font-family: monospace;">${shortenAddress(ownerAddress, 6)}</div>
+      </div>
+      <div style="display: flex; gap: 16px; margin-top: 12px; font-size: 11px;">
+        <a href="${explorerUrl}/token/${tokenAddress}" style="color: #60a5fa; text-decoration: none;">Token ↗</a>
+        <a href="${explorerUrl}/address/${ownerAddress}" style="color: #60a5fa; text-decoration: none;">Owner ↗</a>
+      </div>
+    </div>
+  `;
+
+  return createUIResource({
+    uri: `ui://token-balance/${tokenAddress}/${ownerAddress}`,
+    content: { type: 'rawHtml', htmlString: html },
+    encoding: 'text',
+  });
+}
+
+/** Create a transfer result card */
+export function createTransferCard(
+  type: 'evm' | 'token',
+  amount: string,
+  symbol: string,
+  toAddress: string,
+  txHash: string,
+  explorerUrl: string
+): ReturnType<typeof createUIResource> {
+  const html = `
+    <div style="${BASE_STYLES}">
+      <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px;">
+        <span style="color: #22c55e; font-size: 20px;">✓</span>
+        <span style="font-size: 11px; opacity: 0.6; text-transform: uppercase;">Transfer Sent</span>
+      </div>
+      <div style="font-size: 24px; font-weight: 600; margin-bottom: 16px;">
+        ${amount} ${symbol}
+      </div>
+      <div style="margin-bottom: 12px;">
+        <div style="font-size: 11px; opacity: 0.5; margin-bottom: 4px;">To</div>
+        <div style="font-size: 12px; font-family: monospace;">${shortenAddress(toAddress, 8)}</div>
+      </div>
+      <div style="margin-bottom: 12px;">
+        <div style="font-size: 11px; opacity: 0.5; margin-bottom: 4px;">Transaction</div>
+        <div style="font-size: 12px; font-family: monospace;">${shortenAddress(txHash, 8)}</div>
+      </div>
+      <a href="${explorerUrl}/tx/${txHash}" style="color: #60a5fa; text-decoration: none; font-size: 12px;">View on Explorer ↗</a>
+    </div>
+  `;
+
+  return createUIResource({
+    uri: `ui://transfer/${txHash}`,
+    content: { type: 'rawHtml', htmlString: html },
+    encoding: 'text',
+  });
+}
+
 // Re-export transaction-related cards from tx-cards module
 export {
   createBridgeCard,
