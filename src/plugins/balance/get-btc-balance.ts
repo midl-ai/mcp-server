@@ -9,6 +9,7 @@ import type { MidlWalletClient } from '../../wallet.js';
 import { type ToolResponse, success, error, ErrorCode } from '../../types.js';
 import { createLogger } from '../../logger.js';
 import { SATOSHIS_PER_BTC } from '../../config.js';
+import { resolveAddress } from '../../utils/wallet-addresses.js';
 
 const log = createLogger('get-btc-balance');
 
@@ -17,7 +18,8 @@ const schema = z.object({
     .string()
     .min(26)
     .max(90)
-    .describe('Bitcoin address (bc1..., tb1..., bcrt1..., or legacy format)'),
+    .optional()
+    .describe('Bitcoin address. If omitted, uses connected wallet payment address.'),
 });
 
 type Input = z.infer<typeof schema>;
@@ -38,7 +40,7 @@ interface BtcBalanceInfo {
 const config: ToolConfig = {
   name: 'get_btc_balance',
   description:
-    'Get the Bitcoin L1 balance for an address. Returns confirmed and unconfirmed balances in satoshis. This queries the mempool API directly.',
+    'Get the Bitcoin L1 balance. If no address provided, returns balance of connected wallet payment address. Returns confirmed and unconfirmed balances.',
   schema,
   readOnly: true,
   destructive: false,
@@ -53,8 +55,9 @@ export class GetBtcBalanceTool extends ToolBase<Input, BtcBalanceInfo> {
   }
 
   async execute(input: Input): Promise<ToolResponse<BtcBalanceInfo>> {
+    const address = await resolveAddress(this.wallet, input.address, 'btc-payment');
     const networkConfig = this.wallet.getNetworkInfo();
-    const url = `${networkConfig.mempoolUrl}/api/address/${input.address}`;
+    const url = `${networkConfig.mempoolUrl}/api/address/${address}`;
 
     try {
       const response = await fetch(url);
@@ -80,7 +83,7 @@ export class GetBtcBalanceTool extends ToolBase<Input, BtcBalanceInfo> {
       const totalSatoshis = confirmedSatoshis + unconfirmedSatoshis;
 
       return success({
-        address: input.address,
+        address,
         balanceSatoshis: totalSatoshis.toString(),
         balanceFormatted: `${(totalSatoshis / SATOSHIS_PER_BTC).toFixed(8)} BTC`,
         confirmedSatoshis: confirmedSatoshis.toString(),

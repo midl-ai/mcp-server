@@ -9,13 +9,14 @@ import type { MidlWalletClient } from '../../wallet.js';
 import { type ToolResponse, success, error, ErrorCode } from '../../types.js';
 import { createLogger } from '../../logger.js';
 import { getNetworkConfig } from '../../config.js';
+import { resolveAddress } from '../../utils/wallet-addresses.js';
 
 const log = createLogger('get-rune-balance');
 
 const RUNE_ID_REGEX = /^\d+:\d+$/;
 
 const schema = z.object({
-  address: z.string().min(1).describe('Bitcoin address to query'),
+  address: z.string().min(1).optional().describe('Bitcoin address. If omitted, uses connected wallet ordinals address.'),
   runeId: z
     .string()
     .regex(RUNE_ID_REGEX, 'Invalid rune ID format. Expected: blockHeight:txIndex (e.g., "840000:1")')
@@ -32,7 +33,7 @@ interface RuneBalanceResult {
 
 const config: ToolConfig = {
   name: 'get_rune_balance',
-  description: 'Get the balance of a specific Rune for a Bitcoin address.',
+  description: 'Get the balance of a specific Rune. If no address provided, uses connected wallet ordinals address.',
   schema,
   readOnly: true,
   destructive: false,
@@ -52,8 +53,9 @@ export class GetRuneBalanceTool extends ToolBase<Input, RuneBalanceResult> {
 
   async execute(input: Input): Promise<ToolResponse<RuneBalanceResult>> {
     try {
+      const address = await resolveAddress(this.wallet, input.address, 'btc-ordinals');
       const networkConfig = getNetworkConfig();
-      const url = `${networkConfig.runesApiUrl}/addresses/${input.address}/runes/balances/${input.runeId}`;
+      const url = `${networkConfig.runesApiUrl}/addresses/${address}/runes/balances/${input.runeId}`;
 
       const response = await fetch(url);
 
@@ -70,7 +72,7 @@ export class GetRuneBalanceTool extends ToolBase<Input, RuneBalanceResult> {
       const data = (await response.json()) as RuneBalanceApiResponse;
 
       return success({
-        address: input.address,
+        address,
         runeId: input.runeId,
         balance: data.data,
       });

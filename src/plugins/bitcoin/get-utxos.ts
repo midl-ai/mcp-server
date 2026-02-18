@@ -8,11 +8,12 @@ import { ToolBase, type ToolConfig } from '../base/tool-base.js';
 import type { MidlWalletClient } from '../../wallet.js';
 import { type ToolResponse, success, error, ErrorCode } from '../../types.js';
 import { createLogger } from '../../logger.js';
+import { resolveAddress } from '../../utils/wallet-addresses.js';
 
 const log = createLogger('get-utxos');
 
 const schema = z.object({
-  address: z.string().min(26).max(90).describe('Bitcoin address'),
+  address: z.string().min(26).max(90).optional().describe('Bitcoin address. If omitted, uses connected wallet payment address.'),
 });
 
 type Input = z.infer<typeof schema>;
@@ -34,7 +35,7 @@ interface GetUtxosResult {
 
 const config: ToolConfig = {
   name: 'get_utxos',
-  description: 'Get unspent transaction outputs (UTXOs) for a Bitcoin address.',
+  description: 'Get unspent transaction outputs (UTXOs). If no address provided, uses connected wallet payment address.',
   schema,
   readOnly: true,
   destructive: false,
@@ -49,8 +50,9 @@ export class GetUtxosTool extends ToolBase<Input, GetUtxosResult> {
   }
 
   async execute(input: Input): Promise<ToolResponse<GetUtxosResult>> {
+    const address = await resolveAddress(this.wallet, input.address, 'btc-payment');
     const networkConfig = this.wallet.getNetworkInfo();
-    const url = `${networkConfig.mempoolUrl}/api/address/${input.address}/utxo`;
+    const url = `${networkConfig.mempoolUrl}/api/address/${address}/utxo`;
 
     try {
       const response = await fetch(url);
@@ -62,7 +64,7 @@ export class GetUtxosTool extends ToolBase<Input, GetUtxosResult> {
       const totalValue = utxos.reduce((sum, u) => sum + u.value, 0);
 
       return success({
-        address: input.address,
+        address,
         utxos,
         count: utxos.length,
         totalValue,

@@ -9,11 +9,12 @@ import type { MidlWalletClient } from '../../wallet.js';
 import { type ToolResponse, success, error, ErrorCode } from '../../types.js';
 import { createLogger } from '../../logger.js';
 import { getNetworkConfig } from '../../config.js';
+import { resolveAddress } from '../../utils/wallet-addresses.js';
 
 const log = createLogger('get-runes');
 
 const schema = z.object({
-  address: z.string().min(1).describe('Bitcoin address to query runes for'),
+  address: z.string().min(1).optional().describe('Bitcoin address. If omitted, uses connected wallet ordinals address.'),
 });
 
 type Input = z.infer<typeof schema>;
@@ -33,7 +34,7 @@ interface GetRunesResult {
 
 const config: ToolConfig = {
   name: 'get_runes',
-  description: 'Get all Runes held by a Bitcoin address.',
+  description: 'Get all Runes held by a Bitcoin address. If no address provided, uses connected wallet ordinals address.',
   schema,
   readOnly: true,
   destructive: false,
@@ -60,8 +61,9 @@ export class GetRunesTool extends ToolBase<Input, GetRunesResult> {
 
   async execute(input: Input): Promise<ToolResponse<GetRunesResult>> {
     try {
+      const address = await resolveAddress(this.wallet, input.address, 'btc-ordinals');
       const networkConfig = getNetworkConfig();
-      const url = `${networkConfig.runesApiUrl}/addresses/${input.address}/runes/balances?include_info=true`;
+      const url = `${networkConfig.runesApiUrl}/addresses/${address}/runes/balances?include_info=true`;
 
       const response = await fetch(url);
 
@@ -82,7 +84,7 @@ export class GetRunesTool extends ToolBase<Input, GetRunesResult> {
       }));
 
       return success({
-        address: input.address,
+        address,
         total: runes.length,
         runes,
       });
