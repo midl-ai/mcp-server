@@ -9,6 +9,9 @@ import { createLogger } from '../logger.js';
 import { NetworkPlugin } from './network/index.js';
 import { BalancePlugin } from './balance/index.js';
 import { ContractPlugin } from './contract/index.js';
+import { BitcoinPlugin } from './bitcoin/index.js';
+import { DeployPlugin } from './deploy/index.js';
+import { TransferPlugin } from './transfer/index.js';
 import { formatToolResult } from './response-formatter.js';
 
 const log = createLogger('plugin-registry');
@@ -19,6 +22,9 @@ function createPlugins(wallet: MidlWalletClient): PluginBase[] {
     new NetworkPlugin(wallet),
     new BalancePlugin(wallet),
     new ContractPlugin(wallet),
+    new BitcoinPlugin(wallet),
+    new DeployPlugin(wallet),
+    new TransferPlugin(wallet),
   ];
 }
 
