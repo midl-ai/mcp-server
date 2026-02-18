@@ -18,7 +18,8 @@ export const SATOSHIS_PER_BTC = 100_000_000;
 // Gas limits for intention-based transactions (bigint for viem compatibility)
 export const GAS_LIMIT_SIMPLE = 21000n;
 export const GAS_LIMIT_RUNE_BRIDGE = 100000n;
-export const GAS_LIMIT_WITHDRAWAL = 200000n;
+export const GAS_LIMIT_DEPLOY = 3000000n;
+export const GAS_LIMIT_CONTRACT_WRITE = 500000n;
 
 // Define viem-compatible chains with blockExplorers
 const midlRegtestChain = defineChain({

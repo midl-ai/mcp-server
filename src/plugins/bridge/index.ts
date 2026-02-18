@@ -1,11 +1,10 @@
 /**
- * Bridge Plugin - BTC ↔ EVM bridging operations
+ * Bridge Plugin - Bridge status tracking
+ * Note: Rune ↔ ERC20 bridging is handled by the Runes plugin
  */
 
 import { PluginBase } from '../base/plugin-base.js';
 import type { MidlWalletClient } from '../../wallet.js';
-import { BridgeBtcToEvmTool } from './bridge-btc-to-evm.js';
-import { BridgeEvmToBtcTool } from './bridge-evm-to-btc.js';
 import { GetBridgeStatusTool } from './get-bridge-status.js';
 
 export class BridgePlugin extends PluginBase {
@@ -13,8 +12,6 @@ export class BridgePlugin extends PluginBase {
 
   constructor(wallet: MidlWalletClient) {
     super();
-    this.registerTool(new BridgeBtcToEvmTool(wallet));
-    this.registerTool(new BridgeEvmToBtcTool(wallet));
     this.registerTool(new GetBridgeStatusTool(wallet));
   }
 }

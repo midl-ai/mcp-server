@@ -13,265 +13,188 @@ import {
   edictRune,
   type EdictRuneParams,
   type EdictRuneResponse,
+  getDefaultAccount,
 } from '@midl/core';
 import {
   addTxIntention,
   finalizeBTCTransaction,
   signIntentions,
+  getEVMAddress,
   midlRegtest,
   midl as midlMainnet,
 } from '@midl/executor';
 import { keyPairConnector } from '@midl/node';
-import { createPublicClient, http } from 'viem';
+import {
+  createPublicClient,
+  http,
+  encodeDeployData,
+  encodeFunctionData,
+  getContractAddress,
+} from 'viem';
 import { createLogger } from './logger.js';
 import {
   getNetworkConfig,
-  GAS_LIMIT_SIMPLE,
   GAS_LIMIT_RUNE_BRIDGE,
-  GAS_LIMIT_WITHDRAWAL,
+  GAS_LIMIT_DEPLOY,
+  GAS_LIMIT_CONTRACT_WRITE,
 } from './config.js';
 
 const log = createLogger('btc-wallet');
 
+/** Result from executing an intention */
+interface IntentionResult {
+  btcTxId: string;
+  btcTxHex: string;
+  evmTxHash: string;
+}
+
 export class MidlBtcWalletClient {
   private readonly config: Config;
-  private readonly privateKey: string;
   private readonly networkName: 'mainnet' | 'regtest';
   private connected = false;
   public ordinalsAddress: string | null = null;
   public paymentAddress: string | null = null;
 
   constructor(privateKey: string, network: 'mainnet' | 'regtest' = 'regtest') {
-    this.privateKey = privateKey;
     this.networkName = network;
-
-    // Create MIDL config with keyPairConnector for server-side signing
     this.config = createConfig({
       networks: [network === 'mainnet' ? mainnet : regtest],
-      connectors: [
-        keyPairConnector({
-          privateKeys: [privateKey],
-        }),
-      ],
+      connectors: [keyPairConnector({ privateKeys: [privateKey] })],
       persist: false,
     });
   }
 
-  /** Connect the wallet and get accounts */
   async connect(): Promise<void> {
     if (this.connected) return;
-
-    try {
-      const accounts = await connect(
-        this.config,
-        { purposes: [AddressPurpose.Ordinals, AddressPurpose.Payment] },
-        'keyPair'
-      );
-
-      const ordinalsAccount = accounts.find((a) => a.purpose === AddressPurpose.Ordinals);
-      const paymentAccount = accounts.find((a) => a.purpose === AddressPurpose.Payment);
-
-      this.ordinalsAddress = ordinalsAccount?.address ?? null;
-      this.paymentAddress = paymentAccount?.address ?? null;
-      this.connected = true;
-
-      log.info(`BTC wallet connected: ordinals=${this.ordinalsAddress}, payment=${this.paymentAddress}`);
-    } catch (err) {
-      const message = err instanceof Error ? err.message : 'Unknown error';
-      log.error(`Failed to connect BTC wallet: ${message}`);
-      throw new Error(`Failed to connect BTC wallet: ${message}`, { cause: err });
-    }
+    const accounts = await connect(
+      this.config,
+      { purposes: [AddressPurpose.Ordinals, AddressPurpose.Payment] },
+      'keyPair'
+    );
+    this.ordinalsAddress = accounts.find((a) => a.purpose === AddressPurpose.Ordinals)?.address ?? null;
+    this.paymentAddress = accounts.find((a) => a.purpose === AddressPurpose.Payment)?.address ?? null;
+    this.connected = true;
+    log.info(`BTC wallet connected: ordinals=${this.ordinalsAddress}`);
   }
 
-  /** Ensure wallet is connected */
   private async ensureConnected(): Promise<void> {
-    if (!this.connected) {
-      await this.connect();
-    }
+    if (!this.connected) await this.connect();
   }
 
-  /** Get EVM public client (typed for MIDL SDK compatibility) */
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private getEvmClient(): any {
     const networkConfig = getNetworkConfig();
     const chain = this.networkName === 'mainnet' ? midlMainnet : midlRegtest;
-    return createPublicClient({
-      chain,
-      transport: http(networkConfig.rpcUrl),
-    });
+    return createPublicClient({ chain, transport: http(networkConfig.rpcUrl) });
   }
 
-  /** Transfer runes using edictRune */
+  /** Execute intention flow: add → finalize → sign → submit */
+  private async executeIntention(
+    intentionParams: Parameters<typeof addTxIntention>[1]
+  ): Promise<IntentionResult> {
+    const evmClient = this.getEvmClient();
+    const intention = await addTxIntention(this.config, intentionParams);
+    const btcTx = await finalizeBTCTransaction(this.config, [intention], evmClient);
+    const signedTxs = await signIntentions(this.config, evmClient, [intention], { txId: btcTx.tx.id });
+    const evmTxHash = await evmClient.sendBTCTransactions({
+      btcTransaction: btcTx.tx.hex,
+      serializedTransactions: signedTxs,
+    });
+    return { btcTxId: btcTx.tx.id, btcTxHex: btcTx.tx.hex, evmTxHash: evmTxHash || btcTx.tx.id };
+  }
+
   async transferRune(params: EdictRuneParams): Promise<EdictRuneResponse> {
     await this.ensureConnected();
-
     log.info(`Transferring runes: ${JSON.stringify(params.transfers)}`);
-
-    const result = await edictRune(this.config, {
-      ...params,
-      publish: params.publish ?? true,
-    });
-
+    const result = await edictRune(this.config, { ...params, publish: params.publish ?? true });
     log.info(`Rune transfer complete: txId=${result.tx.id}`);
     return result;
   }
 
-  /** Bridge BTC to EVM layer (deposit) */
-  async bridgeBtcToEvm(satoshis: number): Promise<{ btcTxId: string; btcTxHex: string }> {
+  async bridgeRuneToErc20(runeId: string, amount: bigint): Promise<IntentionResult> {
     await this.ensureConnected();
-
-    log.info(`Bridging ${satoshis} satoshis to EVM`);
-
-    const evmClient = this.getEvmClient();
-
-    // Create deposit intention
-    const intention = await addTxIntention(this.config, {
-      deposit: {
-        satoshis,
-      },
-      evmTransaction: {
-        value: 0n,
-        gas: GAS_LIMIT_SIMPLE,
-      },
-    });
-
-    // Finalize BTC transaction (calculates fees, creates PSBT)
-    const btcTx = await finalizeBTCTransaction(this.config, [intention], evmClient);
-
-    // Sign the intentions - returns signed EVM transactions
-    const signedTransactions = await signIntentions(this.config, evmClient, [intention], {
-      txId: btcTx.tx.id,
-    });
-
-    // Submit BOTH BTC tx AND signed intentions to MIDL validators
-    // This is critical - broadcastTransaction only sends to BTC mempool
-    // sendBTCTransactions submits to validators who process the bridge
-    await evmClient.sendBTCTransactions({
-      btcTransaction: btcTx.tx.hex,
-      serializedTransactions: signedTransactions,
-    });
-
-    log.info(`BTC deposit submitted to MIDL: txId=${btcTx.tx.id}`);
-
-    return {
-      btcTxId: btcTx.tx.id,
-      btcTxHex: btcTx.tx.hex,
-    };
-  }
-
-  /** Bridge Rune to ERC20 (deposit rune to EVM) */
-  async bridgeRuneToErc20(
-    runeId: string,
-    amount: bigint
-  ): Promise<{ btcTxId: string; btcTxHex: string }> {
-    await this.ensureConnected();
-
     log.info(`Bridging rune ${runeId} (amount: ${amount}) to ERC20`);
-
-    const evmClient = this.getEvmClient();
-
-    // Create intention for bridging rune to ERC20
-    const intention = await addTxIntention(this.config, {
-      deposit: {
-        runes: [
-          {
-            id: runeId,
-            amount,
-          },
-        ],
-      },
-      evmTransaction: {
-        value: 0n,
-        gas: GAS_LIMIT_RUNE_BRIDGE,
-      },
+    const result = await this.executeIntention({
+      deposit: { runes: [{ id: runeId, amount }] },
+      evmTransaction: { value: 0n, gas: GAS_LIMIT_RUNE_BRIDGE },
     });
-
-    // Finalize BTC transaction
-    const btcTx = await finalizeBTCTransaction(this.config, [intention], evmClient);
-
-    // Sign the intentions - returns signed EVM transactions
-    const signedTransactions = await signIntentions(this.config, evmClient, [intention], {
-      txId: btcTx.tx.id,
-    });
-
-    // Submit BOTH BTC tx AND signed intentions to MIDL validators
-    await evmClient.sendBTCTransactions({
-      btcTransaction: btcTx.tx.hex,
-      serializedTransactions: signedTransactions,
-    });
-
-    log.info(`Rune bridge submitted to MIDL: txId=${btcTx.tx.id}`);
-
-    return {
-      btcTxId: btcTx.tx.id,
-      btcTxHex: btcTx.tx.hex,
-    };
+    log.info(`Rune bridge submitted: txId=${result.btcTxId}`);
+    return result;
   }
 
-  /** Bridge BTC from EVM back to Bitcoin (withdrawal) */
-  async bridgeEvmToBtc(
-    satoshis: number,
-    btcAddress: string
-  ): Promise<{ btcTxId: string; btcTxHex: string }> {
+  async bridgeErc20ToRune(runeId: string, amount: bigint): Promise<IntentionResult> {
     await this.ensureConnected();
-
-    log.info(`Withdrawing ${satoshis} satoshis to ${btcAddress}`);
-
-    const evmClient = this.getEvmClient();
-
-    // Create withdrawal intention with completeTx
-    const intention = await addTxIntention(this.config, {
-      withdraw: {
-        satoshis,
-      },
-      evmTransaction: {
-        value: 0n,
-        gas: GAS_LIMIT_WITHDRAWAL,
-      },
+    log.info(`Withdrawing ERC20 to rune ${runeId} (amount: ${amount})`);
+    const result = await this.executeIntention({
+      withdraw: { runes: [{ id: runeId, amount }] },
+      evmTransaction: { value: 0n, gas: GAS_LIMIT_RUNE_BRIDGE },
     });
-
-    // Finalize BTC transaction
-    const btcTx = await finalizeBTCTransaction(this.config, [intention], evmClient);
-
-    // Sign the intentions - returns signed EVM transactions
-    const signedTransactions = await signIntentions(this.config, evmClient, [intention], {
-      txId: btcTx.tx.id,
-    });
-
-    // Submit BOTH BTC tx AND signed intentions to MIDL validators
-    await evmClient.sendBTCTransactions({
-      btcTransaction: btcTx.tx.hex,
-      serializedTransactions: signedTransactions,
-    });
-
-    log.info(`EVM withdrawal submitted to MIDL: txId=${btcTx.tx.id}`);
-
-    return {
-      btcTxId: btcTx.tx.id,
-      btcTxHex: btcTx.tx.hex,
-    };
+    log.info(`ERC20 to Rune withdrawal submitted: txId=${result.btcTxId}`);
+    return result;
   }
 
-  /** Get the underlying MIDL config for advanced operations */
+  getEvmAddress(): `0x${string}` {
+    const account = getDefaultAccount(this.config);
+    const network = this.config.getState().network;
+    return getEVMAddress(account, network) as `0x${string}`;
+  }
+
+  async deployContract(
+    abi: readonly unknown[],
+    bytecode: `0x${string}`,
+    args: readonly unknown[] = []
+  ): Promise<{ btcTxId: string; contractAddress: `0x${string}`; evmTxHash: string }> {
+    await this.ensureConnected();
+    const evmAddress = this.getEvmAddress();
+    const nonce = await this.getEvmClient().getTransactionCount({ address: evmAddress });
+    const deployData = encodeDeployData({ abi, bytecode, args: args as unknown[] });
+
+    log.info(`Deploying contract from ${evmAddress} with nonce ${nonce}`);
+    const result = await this.executeIntention({
+      evmTransaction: { data: deployData, gas: GAS_LIMIT_DEPLOY },
+    });
+
+    const contractAddress = getContractAddress({ from: evmAddress, nonce: BigInt(nonce) });
+    log.info(`Contract deployed: ${contractAddress}, btcTx=${result.btcTxId}`);
+    return { btcTxId: result.btcTxId, contractAddress, evmTxHash: result.evmTxHash };
+  }
+
+  async writeContract(
+    address: `0x${string}`,
+    abi: readonly unknown[],
+    functionName: string,
+    args: readonly unknown[] = [],
+    value: bigint = 0n
+  ): Promise<IntentionResult> {
+    await this.ensureConnected();
+    const callData = encodeFunctionData({ abi, functionName, args: args as unknown[] });
+
+    log.info(`Writing to contract ${address}.${functionName}`);
+    const intentionParams: Parameters<typeof addTxIntention>[1] = {
+      evmTransaction: { to: address, data: callData, gas: GAS_LIMIT_CONTRACT_WRITE },
+    };
+
+    if (value > 0n) {
+      intentionParams.deposit = { satoshis: Number(value / 10_000_000_000n) };
+      if (intentionParams.evmTransaction) {
+        intentionParams.evmTransaction.value = value;
+      }
+    }
+
+    const result = await this.executeIntention(intentionParams);
+    log.info(`Contract write submitted: btcTx=${result.btcTxId}`);
+    return result;
+  }
+
   getMidlConfig(): Config {
     return this.config;
   }
 }
 
-/**
- * Create Bitcoin wallet client from environment variable
- */
 export function createBtcWalletFromEnv(): MidlBtcWalletClient {
   const privateKey = process.env.MIDL_PRIVATE_KEY;
-
-  if (!privateKey) {
-    throw new Error('MIDL_PRIVATE_KEY environment variable is required');
-  }
-
-  // Normalize key (remove 0x prefix if present for BTC compatibility)
+  if (!privateKey) throw new Error('MIDL_PRIVATE_KEY environment variable is required');
   const normalizedKey = privateKey.startsWith('0x') ? privateKey.slice(2) : privateKey;
-
   const network = (process.env.MIDL_NETWORK || 'regtest') as 'mainnet' | 'regtest';
-
   return new MidlBtcWalletClient(normalizedKey, network);
 }

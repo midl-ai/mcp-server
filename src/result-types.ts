@@ -86,11 +86,13 @@ export interface DeployResult {
   contractAddress: string;
   transactionHash: string;
   blockNumber: number;
-  status: 'success' | 'reverted';
+  status: 'success' | 'reverted' | 'pending_confirmation';
   gasUsed: string;
   explorerUrl: string;
   abi?: unknown[];
   warnings?: string[];
+  btcTxId?: string;
+  btcExplorerUrl?: string;
 }
 
 /** System contract info */

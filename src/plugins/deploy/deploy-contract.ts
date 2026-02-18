@@ -1,6 +1,6 @@
 /**
  * Tool: midl_deploy_contract
- * Deploy smart contracts using:
+ * Deploy smart contracts using MIDL intention flow:
  * 1. Built-in templates (ERC20, Counter) - recommended for most users
  * 2. Custom Solidity source code - for advanced users
  * 3. Pre-compiled ABI + bytecode - for maximum flexibility
@@ -13,6 +13,8 @@ import type { MidlWalletClient } from '../../wallet.js';
 import { type ToolResponse, type DeployResult, success, error, ErrorCode } from '../../types.js';
 import { createLogger } from '../../logger.js';
 import { generateFromTemplate, getTemplateNames } from './templates.js';
+import { createBtcWalletFromEnv } from '../../btc-wallet.js';
+import { getNetworkConfig } from '../../config.js';
 
 const log = createLogger('deploy-contract');
 
@@ -131,25 +133,30 @@ export class DeployContractTool extends ToolBase<Input, DeployResult> {
         return error(ErrorCode.INVALID_ABI, 'Provide template, source+contractName, or abi+bytecode');
       }
 
-      log.info('Deploying contract...');
-      const result = await this.wallet.deployContract(
+      log.info('Deploying contract via MIDL intention flow...');
+
+      // Use BTC wallet for intention-based deployment
+      const btcWallet = createBtcWalletFromEnv();
+      await btcWallet.connect();
+
+      const result = await btcWallet.deployContract(
         abi as readonly unknown[],
         bytecode as `0x${string}`,
         args as readonly unknown[]
       );
 
-      if (!result.success) {
-        return result as ToolResponse<never>;
-      }
+      const networkConfig = getNetworkConfig();
 
       return success({
-        contractAddress: result.data.contractAddress,
-        transactionHash: result.data.transactionHash,
-        blockNumber: result.data.blockNumber,
-        status: result.data.status,
-        gasUsed: result.data.gasUsed,
-        explorerUrl: result.data.explorerUrl,
+        contractAddress: result.contractAddress,
+        transactionHash: result.evmTxHash,
+        blockNumber: 0, // Not immediately available with intention flow
+        status: 'pending_confirmation',
+        gasUsed: 'pending',
+        explorerUrl: `${networkConfig.explorerUrl}/address/${result.contractAddress}`,
         abi,
+        btcTxId: result.btcTxId,
+        btcExplorerUrl: `${networkConfig.mempoolUrl}/tx/${result.btcTxId}`,
       });
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Unknown error';
