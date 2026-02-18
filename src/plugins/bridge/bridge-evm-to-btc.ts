@@ -9,7 +9,7 @@ import type { MidlWalletClient } from '../../wallet.js';
 import { type ToolResponse, success, error, ErrorCode } from '../../types.js';
 import { createLogger } from '../../logger.js';
 import { createBtcWalletFromEnv } from '../../btc-wallet.js';
-import { getNetworkConfig } from '../../config.js';
+import { getNetworkConfig, SATOSHIS_PER_BTC } from '../../config.js';
 
 const log = createLogger('bridge-evm-to-btc');
 
@@ -61,7 +61,7 @@ export class BridgeEvmToBtcTool extends ToolBase<Input, BridgeEvmToBtcResult> {
       const result = await btcWallet.bridgeEvmToBtc(satoshis, input.btcAddress);
 
       const networkConfig = getNetworkConfig();
-      const btcAmount = (satoshis / 100_000_000).toFixed(8);
+      const btcAmount = (satoshis / SATOSHIS_PER_BTC).toFixed(8);
 
       return success({
         btcTxId: result.btcTxId,

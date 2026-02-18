@@ -8,6 +8,7 @@ import { ToolBase, type ToolConfig } from '../base/tool-base.js';
 import type { MidlWalletClient } from '../../wallet.js';
 import { type ToolResponse, success, error, ErrorCode } from '../../types.js';
 import { createLogger } from '../../logger.js';
+import { SATOSHIS_PER_BTC } from '../../config.js';
 
 const log = createLogger('get-btc-balance');
 
@@ -42,8 +43,6 @@ const config: ToolConfig = {
   readOnly: true,
   destructive: false,
 };
-
-const SATOSHIS_PER_BTC = 100_000_000;
 
 export class GetBtcBalanceTool extends ToolBase<Input, BtcBalanceInfo> {
   private readonly wallet: MidlWalletClient;

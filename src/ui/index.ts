@@ -16,8 +16,8 @@ export function formatNumber(value: string | number): string {
   return Number(value).toLocaleString();
 }
 
-/** Base styles for UI cards */
-const BASE_STYLES = `
+/** Base styles for UI cards (exported for use in other card modules) */
+export const BASE_STYLES = `
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
   background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
   color: #ffffff;
@@ -144,48 +144,10 @@ export function createSystemContractsCard(
   });
 }
 
-/** Create a transaction receipt card */
-export function createTxReceiptCard(
-  txHash: string,
-  status: 'success' | 'reverted',
-  blockNumber: number,
-  gasUsed: string,
-  explorerUrl: string
-): ReturnType<typeof createUIResource> {
-  const statusColor = status === 'success' ? '#22c55e' : '#ef4444';
-  const statusIcon = status === 'success' ? '✓' : '✗';
-
-  const html = `
-    <div style="${BASE_STYLES}">
-      <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px;">
-        <span style="color: ${statusColor}; font-size: 20px;">${statusIcon}</span>
-        <span style="font-size: 11px; opacity: 0.6; text-transform: uppercase;">Transaction ${status}</span>
-      </div>
-      <div style="margin-bottom: 16px;">
-        <div style="font-size: 11px; opacity: 0.5; margin-bottom: 4px;">Transaction Hash</div>
-        <div style="font-size: 12px; font-family: monospace; word-break: break-all;">${txHash}</div>
-      </div>
-      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
-        <div>
-          <div style="font-size: 11px; opacity: 0.5; margin-bottom: 4px;">Block</div>
-          <div style="font-family: monospace;">${formatNumber(blockNumber)}</div>
-        </div>
-        <div>
-          <div style="font-size: 11px; opacity: 0.5; margin-bottom: 4px;">Gas Used</div>
-          <div style="font-family: monospace;">${formatNumber(gasUsed)}</div>
-        </div>
-      </div>
-      <div style="margin-top: 16px;">
-        <a href="${explorerUrl}" style="color: #60a5fa; text-decoration: none; font-size: 12px;">
-          View on Explorer ↗
-        </a>
-      </div>
-    </div>
-  `;
-
-  return createUIResource({
-    uri: `ui://tx/${txHash}`,
-    content: { type: 'rawHtml', htmlString: html },
-    encoding: 'text',
-  });
-}
+// Re-export transaction-related cards from tx-cards module
+export {
+  createBridgeCard,
+  createRuneTransferCard,
+  createDeploymentCard,
+  createTxReceiptCard,
+} from './tx-cards.js';

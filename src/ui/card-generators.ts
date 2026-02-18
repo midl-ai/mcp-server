@@ -4,7 +4,15 @@
  */
 
 import type { ToolResponse, NetworkInfo, BalanceInfo } from '../types.js';
-import { createBalanceCard, createNetworkCard, createSystemContractsCard } from './index.js';
+import {
+  createBalanceCard,
+  createNetworkCard,
+  createSystemContractsCard,
+  createBridgeCard,
+  createRuneTransferCard,
+  createDeploymentCard,
+  createTxReceiptCard,
+} from './index.js';
 
 /** Content item type from MCP SDK */
 interface ContentItem {
@@ -32,6 +40,57 @@ interface BtcBalanceInfo {
   confirmedSatoshis: string;
   unconfirmedSatoshis: string;
   network: string;
+}
+
+/** Bridge result types */
+interface BridgeBtcToEvmResult {
+  btcTxId: string;
+  btcAmount: string;
+  explorerUrl: string;
+  status: string;
+}
+
+interface BridgeEvmToBtcResult {
+  btcTxId: string;
+  btcAmount: string;
+  btcAddress: string;
+  explorerUrl: string;
+  status: string;
+}
+
+interface BridgeRuneResult {
+  btcTxId: string;
+  runeId: string;
+  amount: string;
+  explorerUrl: string;
+  status: string;
+}
+
+/** Rune transfer result type */
+interface RuneTransferResult {
+  txId: string;
+  runeId: string;
+  amount: string;
+  toAddress: string;
+  explorerUrl: string;
+}
+
+/** Deploy result type */
+interface DeployResult {
+  contractAddress: string;
+  txHash: string;
+  contractName?: string;
+  gasUsed: string;
+  explorerUrl: string;
+}
+
+/** Transaction receipt type */
+interface TxReceiptResult {
+  transactionHash: string;
+  status: 'success' | 'reverted';
+  blockNumber: number;
+  gasUsed: string;
+  explorerUrl: string;
 }
 
 type CardGenerator = (
@@ -83,6 +142,60 @@ const cardGenerators: Record<string, CardGenerator> = {
       data.address,
       data.balanceFormatted,
       data.network
+    );
+    return card as ContentItem;
+  },
+
+  midl_bridge_btc_to_evm: (result, _explorerUrl) => {
+    if (!result.success) return null;
+    const data = result.data as BridgeBtcToEvmResult;
+    const card = createBridgeCard('btc-to-evm', data.btcTxId, data.btcAmount, data.status, data.explorerUrl);
+    return card as ContentItem;
+  },
+
+  midl_bridge_evm_to_btc: (result, _explorerUrl) => {
+    if (!result.success) return null;
+    const data = result.data as BridgeEvmToBtcResult;
+    const card = createBridgeCard('evm-to-btc', data.btcTxId, data.btcAmount, data.status, data.explorerUrl);
+    return card as ContentItem;
+  },
+
+  midl_bridge_rune_to_erc20: (result, _explorerUrl) => {
+    if (!result.success) return null;
+    const data = result.data as BridgeRuneResult;
+    const card = createBridgeCard('rune-to-erc20', data.btcTxId, data.amount, data.status, data.explorerUrl);
+    return card as ContentItem;
+  },
+
+  midl_transfer_rune: (result, _explorerUrl) => {
+    if (!result.success) return null;
+    const data = result.data as RuneTransferResult;
+    const card = createRuneTransferCard(data.runeId, data.amount, data.toAddress, data.txId, data.explorerUrl);
+    return card as ContentItem;
+  },
+
+  midl_deploy_contract: (result, _explorerUrl) => {
+    if (!result.success) return null;
+    const data = result.data as DeployResult;
+    const card = createDeploymentCard(
+      data.contractAddress,
+      data.txHash,
+      data.contractName,
+      data.gasUsed,
+      data.explorerUrl
+    );
+    return card as ContentItem;
+  },
+
+  midl_get_transaction_receipt: (result, _explorerUrl) => {
+    if (!result.success) return null;
+    const data = result.data as TxReceiptResult;
+    const card = createTxReceiptCard(
+      data.transactionHash,
+      data.status,
+      data.blockNumber,
+      data.gasUsed,
+      data.explorerUrl
     );
     return card as ContentItem;
   },

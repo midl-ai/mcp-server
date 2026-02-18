@@ -25,7 +25,12 @@ import {
 import { keyPairConnector } from '@midl/node';
 import { createPublicClient, http } from 'viem';
 import { createLogger } from './logger.js';
-import { getNetworkConfig } from './config.js';
+import {
+  getNetworkConfig,
+  GAS_LIMIT_SIMPLE,
+  GAS_LIMIT_RUNE_BRIDGE,
+  GAS_LIMIT_WITHDRAWAL,
+} from './config.js';
 
 const log = createLogger('btc-wallet');
 
@@ -126,7 +131,7 @@ export class MidlBtcWalletClient {
       },
       evmTransaction: {
         value: 0n,
-        gas: 21000n,
+        gas: GAS_LIMIT_SIMPLE,
       },
     });
 
@@ -172,7 +177,7 @@ export class MidlBtcWalletClient {
       },
       evmTransaction: {
         value: 0n,
-        gas: 100000n,
+        gas: GAS_LIMIT_RUNE_BRIDGE,
       },
     });
 
@@ -213,7 +218,7 @@ export class MidlBtcWalletClient {
       },
       evmTransaction: {
         value: 0n,
-        gas: 200000n,
+        gas: GAS_LIMIT_WITHDRAWAL,
       },
     });
 
