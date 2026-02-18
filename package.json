@@ -1,0 +1,52 @@
+{
+  "name": "midl-mcp-server",
+  "version": "1.0.0",
+  "description": "MCP server for MIDL blockchain - AI-powered terminal for Bitcoin L1 + EVM L2 hybrid",
+  "type": "module",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsup src/index.ts --format esm --dts",
+    "start": "node dist/index.js",
+    "dev": "tsx watch src/index.ts",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint src/",
+    "lint:fix": "eslint src/ --fix"
+  },
+  "keywords": [
+    "midl",
+    "mcp",
+    "blockchain",
+    "bitcoin",
+    "evm",
+    "ai"
+  ],
+  "author": "",
+  "license": "MIT",
+  "packageManager": "pnpm@10.17.1",
+  "dependencies": {
+    "@mcp-ui/server": "^6.1.0",
+    "@midl/core": "^3.0.2",
+    "@midl/executor": "^3.0.2",
+    "@midl/node": "^3.0.2",
+    "@modelcontextprotocol/sdk": "^1.26.0",
+    "dotenv": "^17.3.1",
+    "express": "^5.2.1",
+    "viem": "npm:@midl/viem@^2.45.0",
+    "zod": "^4.3.6"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@types/express": "^5.0.6",
+    "@types/node": "^25.2.3",
+    "@typescript-eslint/eslint-plugin": "^8.56.0",
+    "@typescript-eslint/parser": "^8.56.0",
+    "eslint": "^10.0.0",
+    "tsup": "^8.5.1",
+    "tsx": "^4.21.0",
+    "typescript": "^5.9.3",
+    "typescript-eslint": "^8.56.0"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  }
+}
