@@ -3,7 +3,19 @@
  * Each tool can optionally have a card generator for rich visual responses
  */
 
-import type { ToolResponse, NetworkInfo, BalanceInfo } from '../types.js';
+import type {
+  ToolResponse,
+  NetworkInfo,
+  BalanceInfo,
+  BtcBalanceInfo,
+  SystemContractInfo,
+  BridgeBtcToEvmResult,
+  BridgeEvmToBtcResult,
+  BridgeRuneToErc20Result,
+  RuneTransferResult,
+  DeployResult,
+  TxReceipt,
+} from '../types.js';
 import {
   createBalanceCard,
   createNetworkCard,
@@ -23,74 +35,6 @@ interface ContentItem {
     mimeType: string;
     text?: string;
   };
-}
-
-/** System contract info type */
-interface SystemContractInfo {
-  name: string;
-  address: string;
-  description: string;
-}
-
-/** BTC balance info type */
-interface BtcBalanceInfo {
-  address: string;
-  balanceSatoshis: string;
-  balanceFormatted: string;
-  confirmedSatoshis: string;
-  unconfirmedSatoshis: string;
-  network: string;
-}
-
-/** Bridge result types */
-interface BridgeBtcToEvmResult {
-  btcTxId: string;
-  btcAmount: string;
-  explorerUrl: string;
-  status: string;
-}
-
-interface BridgeEvmToBtcResult {
-  btcTxId: string;
-  btcAmount: string;
-  btcAddress: string;
-  explorerUrl: string;
-  status: string;
-}
-
-interface BridgeRuneResult {
-  btcTxId: string;
-  runeId: string;
-  amount: string;
-  explorerUrl: string;
-  status: string;
-}
-
-/** Rune transfer result type */
-interface RuneTransferResult {
-  txId: string;
-  runeId: string;
-  amount: string;
-  toAddress: string;
-  explorerUrl: string;
-}
-
-/** Deploy result type */
-interface DeployResult {
-  contractAddress: string;
-  txHash: string;
-  contractName?: string;
-  gasUsed: string;
-  explorerUrl: string;
-}
-
-/** Transaction receipt type */
-interface TxReceiptResult {
-  transactionHash: string;
-  status: 'success' | 'reverted';
-  blockNumber: number;
-  gasUsed: string;
-  explorerUrl: string;
 }
 
 type CardGenerator = (
@@ -162,7 +106,7 @@ const cardGenerators: Record<string, CardGenerator> = {
 
   midl_bridge_rune_to_erc20: (result, _explorerUrl) => {
     if (!result.success) return null;
-    const data = result.data as BridgeRuneResult;
+    const data = result.data as BridgeRuneToErc20Result;
     const card = createBridgeCard('rune-to-erc20', data.btcTxId, data.amount, data.status, data.explorerUrl);
     return card as ContentItem;
   },
@@ -179,8 +123,8 @@ const cardGenerators: Record<string, CardGenerator> = {
     const data = result.data as DeployResult;
     const card = createDeploymentCard(
       data.contractAddress,
-      data.txHash,
-      data.contractName,
+      data.transactionHash,
+      undefined, // contractName not in result
       data.gasUsed,
       data.explorerUrl
     );
@@ -189,7 +133,7 @@ const cardGenerators: Record<string, CardGenerator> = {
 
   midl_get_transaction_receipt: (result, _explorerUrl) => {
     if (!result.success) return null;
-    const data = result.data as TxReceiptResult;
+    const data = result.data as TxReceipt;
     const card = createTxReceiptCard(
       data.transactionHash,
       data.status,

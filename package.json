@@ -31,6 +31,7 @@
     "@modelcontextprotocol/sdk": "^1.26.0",
     "dotenv": "^17.3.1",
     "express": "^5.2.1",
+    "solc": "^0.8.34",
     "viem": "npm:@midl/viem@^2.45.0",
     "zod": "^4.3.6"
   },
