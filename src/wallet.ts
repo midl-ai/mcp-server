@@ -10,8 +10,8 @@ import { error, ErrorCode, type ToolResponse, type BalanceInfo, type TxReceipt }
 
 export class MidlWalletClient {
   public readonly address: `0x${string}`;
-  private readonly account: ReturnType<typeof privateKeyToAccount>;
-  private readonly walletClient: ReturnType<typeof createWalletClient>;
+  public readonly account: ReturnType<typeof privateKeyToAccount>;
+  public readonly walletClient: ReturnType<typeof createWalletClient>;
   public readonly publicClient: ReturnType<typeof createPublicClient>;
   private readonly networkConfig: ReturnType<typeof getNetworkConfig>;
 

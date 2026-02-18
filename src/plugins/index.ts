@@ -12,6 +12,9 @@ import { ContractPlugin } from './contract/index.js';
 import { BitcoinPlugin } from './bitcoin/index.js';
 import { DeployPlugin } from './deploy/index.js';
 import { TransferPlugin } from './transfer/index.js';
+import { UtilityPlugin } from './utility/index.js';
+import { RunesPlugin } from './runes/index.js';
+import { BridgePlugin } from './bridge/index.js';
 import { formatToolResult } from './response-formatter.js';
 
 const log = createLogger('plugin-registry');
@@ -25,6 +28,9 @@ function createPlugins(wallet: MidlWalletClient): PluginBase[] {
     new BitcoinPlugin(wallet),
     new DeployPlugin(wallet),
     new TransferPlugin(wallet),
+    new UtilityPlugin(wallet),
+    new RunesPlugin(wallet),
+    new BridgePlugin(wallet),
   ];
 }
 

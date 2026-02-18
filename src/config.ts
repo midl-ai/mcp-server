@@ -36,6 +36,7 @@ export const NETWORKS = {
     rpcUrl: midl.rpcUrls.default.http[0] ?? 'https://rpc.midl.xyz',
     explorerUrl: 'https://blockscout.midl.xyz',
     mempoolUrl: 'https://mempool.midl.xyz',
+    runesApiUrl: 'https://runes.midl.xyz',
   },
   regtest: {
     chain: midlRegtestChain,
@@ -44,6 +45,7 @@ export const NETWORKS = {
     rpcUrl: midlRegtest.rpcUrls.default.http[0] ?? 'https://rpc.staging.midl.xyz',
     explorerUrl: 'https://blockscout.staging.midl.xyz',
     mempoolUrl: 'https://mempool.staging.midl.xyz',
+    runesApiUrl: 'https://runes.staging.midl.xyz',
   },
 } as const;
 
