@@ -26,6 +26,7 @@ interface BridgeBtcToEvmResult {
   btcAmount: string;
   explorerUrl: string;
   status: string;
+  nextStep: string;
 }
 
 const config: ToolConfig = {
@@ -68,6 +69,7 @@ export class BridgeBtcToEvmTool extends ToolBase<Input, BridgeBtcToEvmResult> {
         btcAmount: `${btcAmount} BTC`,
         explorerUrl: `${networkConfig.mempoolUrl}/tx/${result.btcTxId}`,
         status: 'pending_confirmation',
+        nextStep: `Use midl_get_bridge_status with btcTxId "${result.btcTxId}" to track progress`,
       });
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Unknown error';
