@@ -41,6 +41,23 @@ export const ErrorCode = {
   UNKNOWN_ERROR: 'UNKNOWN_ERROR',
 } as const;
 
+/** Default suggestions for common error codes */
+export const ErrorSuggestion: Record<string, string> = {
+  INSUFFICIENT_FUNDS: 'Use midl_bridge_btc_to_evm to bridge BTC to your EVM wallet',
+  INVALID_ADDRESS: 'Verify the address format - EVM addresses start with 0x (40 hex chars)',
+  RPC_TIMEOUT: 'Try again in a few seconds - the network may be congested',
+  RPC_CONNECTION_FAILED: 'Check network connectivity and try again',
+  TX_REVERTED: 'Check transaction parameters and ensure sufficient gas',
+  GAS_ESTIMATION_FAILED: 'Verify contract address exists and function is callable',
+  CONTRACT_NOT_FOUND: 'Verify contract is deployed at the specified address',
+  INVALID_ABI: 'Check ABI JSON format and ensure it matches the deployed contract',
+  FUNCTION_NOT_FOUND: 'List contract functions with midl_read_contract using abi parameter',
+  INVALID_PRIVATE_KEY: 'Ensure MIDL_PRIVATE_KEY is a valid 64-char hex string',
+  RUNE_NOT_FOUND: 'Use midl_get_runes to list available runes for the address',
+  BRIDGE_PENDING: 'Bridge transaction submitted - check status on the explorer',
+  UNKNOWN_ERROR: 'Check the error details and try again',
+};
+
 export type ErrorCodeType = (typeof ErrorCode)[keyof typeof ErrorCode];
 
 /**
@@ -81,7 +98,7 @@ export function success<T>(data: T): ToolResponse<T> {
 }
 
 /**
- * Helper to create error response
+ * Helper to create error response (auto-applies default suggestion if not provided)
  */
 export function error(
   code: ErrorCodeType,
@@ -91,7 +108,12 @@ export function error(
 ): ToolResponse<never> {
   return {
     success: false,
-    error: { code, message, details, suggestion },
+    error: {
+      code,
+      message,
+      details,
+      suggestion: suggestion ?? ErrorSuggestion[code] ?? undefined,
+    },
   };
 }
 

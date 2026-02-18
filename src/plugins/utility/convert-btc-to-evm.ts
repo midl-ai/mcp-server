@@ -31,7 +31,8 @@ interface ConvertResult {
 const config: ToolConfig = {
   name: 'convert_btc_to_evm',
   description:
-    'Derive the EVM address from a Bitcoin public key. In MIDL, each BTC public key has a deterministic EVM address.',
+    'Derive EVM address from Bitcoin public key (compressed 33-byte or uncompressed 65-byte hex). ' +
+    'In MIDL, each BTC key deterministically maps to one EVM address via keccak256.',
   schema,
   readOnly: true,
   destructive: false,

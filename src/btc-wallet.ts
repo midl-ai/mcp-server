@@ -91,8 +91,9 @@ export class MidlBtcWalletClient {
     }
   }
 
-  /** Get EVM public client */
-  private getEvmClient(): ReturnType<typeof createPublicClient> {
+  /** Get EVM public client (typed for MIDL SDK compatibility) */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  private getEvmClient(): any {
     const networkConfig = getNetworkConfig();
     const chain = this.networkName === 'mainnet' ? midlMainnet : midlRegtest;
     return createPublicClient({

@@ -1,13 +1,10 @@
 /**
  * Tool result types for MIDL MCP Server
- * Each tool returns a specific result shape
  */
 
 import type { TxReceipt } from './types.js';
 
-/**
- * Balance response
- */
+/** Balance response */
 export interface BalanceInfo {
   address: string;
   balance: string;
@@ -16,9 +13,7 @@ export interface BalanceInfo {
   blockNumber: number;
 }
 
-/**
- * Rune information
- */
+/** Rune information */
 export interface RuneInfo {
   runeId: string;
   name: string;
@@ -27,9 +22,7 @@ export interface RuneInfo {
   divisibility: number;
 }
 
-/**
- * Network information
- */
+/** Network information */
 export interface NetworkInfo {
   chainId: number;
   name: string;
@@ -39,9 +32,7 @@ export interface NetworkInfo {
   blockNumber: number;
 }
 
-/**
- * BTC balance info (from mempool API)
- */
+/** BTC balance info (from mempool API) */
 export interface BtcBalanceInfo {
   address: string;
   balanceSatoshis: string;
@@ -51,9 +42,7 @@ export interface BtcBalanceInfo {
   network: string;
 }
 
-/**
- * Bridge operation results
- */
+/** Bridge operation results */
 export interface BridgeBtcToEvmResult {
   btcTxId: string;
   btcTxHex: string;
@@ -82,9 +71,7 @@ export interface BridgeRuneToErc20Result {
   status: string;
 }
 
-/**
- * Rune transfer result
- */
+/** Rune transfer result */
 export interface RuneTransferResult {
   txId: string;
   txHex: string;
@@ -94,9 +81,7 @@ export interface RuneTransferResult {
   explorerUrl: string;
 }
 
-/**
- * Contract deployment result
- */
+/** Contract deployment result */
 export interface DeployResult {
   contractAddress: string;
   transactionHash: string;
@@ -108,18 +93,14 @@ export interface DeployResult {
   warnings?: string[];
 }
 
-/**
- * System contract info
- */
+/** System contract info */
 export interface SystemContractInfo {
   name: string;
   address: string;
   description: string;
 }
 
-/**
- * Block info result
- */
+/** Block info result */
 export interface BlockInfo {
   number: number;
   hash: string;
@@ -133,9 +114,7 @@ export interface BlockInfo {
   explorerUrl: string;
 }
 
-/**
- * UTXOs result
- */
+/** UTXOs result */
 export interface GetUtxosResult {
   address: string;
   utxos: Array<{
@@ -149,9 +128,7 @@ export interface GetUtxosResult {
   network: string;
 }
 
-/**
- * Gas estimate result
- */
+/** Gas estimate result */
 export interface GasEstimateResult {
   gasEstimate: string;
   gasEstimateFormatted: string;
@@ -161,9 +138,7 @@ export interface GasEstimateResult {
   estimatedCostBtc: string;
 }
 
-/**
- * Token balance result
- */
+/** Token balance result */
 export interface TokenBalanceInfo {
   tokenAddress: string;
   ownerAddress: string;
@@ -175,9 +150,7 @@ export interface TokenBalanceInfo {
   network: string;
 }
 
-/**
- * Contract read result
- */
+/** Contract read result */
 export interface ReadContractResult {
   contractAddress: string;
   functionName: string;
@@ -185,26 +158,20 @@ export interface ReadContractResult {
   network: string;
 }
 
-/**
- * Contract write result
- */
+/** Contract write result */
 export interface WriteContractResult extends TxReceipt {
   contractAddress: string;
   functionName: string;
 }
 
-/**
- * Transfer result (EVM or token)
- */
+/** Transfer result (EVM or token) */
 export interface TransferResult extends TxReceipt {
   from: string;
   to: string;
   amount: string;
 }
 
-/**
- * Token transfer result
- */
+/** Token transfer result */
 export interface TransferTokenResult extends TxReceipt {
   tokenAddress: string;
   from: string;
@@ -212,9 +179,7 @@ export interface TransferTokenResult extends TxReceipt {
   amount: string;
 }
 
-/**
- * Get runes result (portfolio)
- */
+/** Get runes result (portfolio) */
 export interface GetRunesResult {
   address: string;
   total: number;
@@ -226,9 +191,7 @@ export interface GetRunesResult {
   }>;
 }
 
-/**
- * Rune balance result
- */
+/** Rune balance result */
 export interface RuneBalanceResult {
   runeId: string;
   name: string;
@@ -236,17 +199,13 @@ export interface RuneBalanceResult {
   address: string;
 }
 
-/**
- * Address conversion result
- */
+/** Address conversion result */
 export interface ConvertResult {
   publicKey: string;
   evmAddress: string;
 }
 
-/**
- * Fee rate result
- */
+/** Fee rate result */
 export interface FeeRateResult {
   fastestFee: number;
   halfHourFee: number;
@@ -256,9 +215,7 @@ export interface FeeRateResult {
   network: string;
 }
 
-/**
- * Get logs result
- */
+/** Get logs result */
 export interface GetLogsResult {
   logs: Array<{
     address: string;
@@ -272,18 +229,14 @@ export interface GetLogsResult {
   network: string;
 }
 
-/**
- * Rune ERC20 address result
- */
+/** Rune ERC20 address result */
 export interface RuneAddressResult {
   runeId: string;
   erc20Address: string;
   explorerUrl: string;
 }
 
-/**
- * Bitcoin transaction info
- */
+/** Bitcoin transaction info */
 export interface TxInfo {
   txid: string;
   version: number;
@@ -296,9 +249,7 @@ export interface TxInfo {
   explorerUrl: string;
 }
 
-/**
- * Contract verification result
- */
+/** Contract verification result */
 export interface VerifyResult {
   address: string;
   verified: boolean;

@@ -1,7 +1,4 @@
-/**
- * UI Card Generators - maps tool results to MCP UI cards
- * Each tool can optionally have a card generator for rich visual responses
- */
+/** UI Card Generators - maps tool results to MCP UI cards */
 
 import type {
   ToolResponse,
@@ -287,10 +284,7 @@ const cardGenerators: Record<string, CardGenerator> = {
   },
 };
 
-/**
- * Generate UI card for a tool result if a generator exists
- * Returns null if no generator is registered for the tool
- */
+/** Generate UI card for a tool result (returns null if no generator exists) */
 export function generateUICard(
   toolName: string,
   result: ToolResponse<unknown>,
