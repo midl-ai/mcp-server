@@ -189,6 +189,31 @@ export class MidlBtcWalletClient {
   getMidlConfig(): Config {
     return this.config;
   }
+
+  /** Bridge BTC from Bitcoin layer to EVM layer (deposit) */
+  async bridgeBtcToEvm(satoshis: bigint): Promise<IntentionResult> {
+    await this.ensureConnected();
+    const { satoshisToWei } = await import('./config.js');
+    log.info(`Bridging ${satoshis} satoshis to EVM`);
+    const result = await this.executeIntention({
+      deposit: { satoshis },
+      evmTransaction: { value: satoshisToWei(satoshis) },
+    });
+    log.info(`BTC→EVM bridge submitted: txId=${result.btcTxId}`);
+    return result;
+  }
+
+  /** Bridge BTC from EVM layer back to Bitcoin layer (withdrawal) */
+  async bridgeEvmToBtc(satoshis: bigint, btcAddress: string): Promise<IntentionResult> {
+    await this.ensureConnected();
+    log.info(`Withdrawing ${satoshis} satoshis to ${btcAddress}`);
+    const result = await this.executeIntention({
+      withdraw: { satoshis },
+      evmTransaction: { value: 0n },
+    });
+    log.info(`EVM→BTC bridge submitted: txId=${result.btcTxId}`);
+    return result;
+  }
 }
 
 export function createBtcWalletFromEnv(): MidlBtcWalletClient {

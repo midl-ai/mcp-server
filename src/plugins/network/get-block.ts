@@ -49,8 +49,10 @@ export class GetBlockTool extends ToolBase<Input, BlockInfo> {
 
   async execute(input: Input): Promise<ToolResponse<BlockInfo>> {
     try {
-      const blockTag = input.blockNumber === 'latest' ? 'latest' : BigInt(input.blockNumber);
-      const block = await this.wallet.publicClient.getBlock({ blockNumber: blockTag as bigint });
+      // viem uses blockTag for 'latest' and blockNumber for specific numbers
+      const block = input.blockNumber === 'latest'
+        ? await this.wallet.publicClient.getBlock({ blockTag: 'latest' })
+        : await this.wallet.publicClient.getBlock({ blockNumber: BigInt(input.blockNumber) });
 
       if (!block) {
         return error(ErrorCode.CONTRACT_NOT_FOUND, `Block not found: ${input.blockNumber}`);
