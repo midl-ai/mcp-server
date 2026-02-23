@@ -11,7 +11,7 @@
   [![TypeScript](https://img.shields.io/badge/TypeScript-5.9-blue.svg)](https://www.typescriptlang.org/)
   [![MCP](https://img.shields.io/badge/MCP-1.26.0-green.svg)](https://modelcontextprotocol.io)
 
-  [Documentation](https://midl-ai.xyz/docs/mcp-server) • [Main Website](https://midl-ai.xyz) • [GitHub](https://github.com/midl-ai/midl-mcp-server)
+  [Documentation](https://midl-ai.xyz/docs/mcp-server) • [Main Website](https://midl-ai.xyz) • [GitHub](https://github.com/midl-ai/mcp-server)
 
 </div>
 
@@ -53,7 +53,7 @@ All through natural conversation in Claude Desktop or Cursor.
 ### Dual Transport Architecture
 
 - **stdio**: For Claude Desktop and Cursor (local development)
-- **HTTP**: For remote clients and web integrations (coming soon)
+- **HTTP**: For remote clients and web integrations — live at `https://mcp.midl-ai.xyz/mcp`
 
 ### Plugin-Based Design
 
@@ -84,7 +84,7 @@ Secure transaction signing using `MIDL_PRIVATE_KEY` environment variable. No pri
 
 ```bash
 # Clone repository
-git clone https://github.com/midl-ai/midl-mcp-server
+git clone https://github.com/midl-ai/mcp-server
 cd midl-mcp-server
 
 # Install dependencies
@@ -489,7 +489,7 @@ We welcome contributions! Here's how:
 
 ## Related Projects
 
-- **[MIDL Frontend](https://github.com/midl-ai/midl-frontend)** - AI chat interface
+- **[MIDL Frontend](https://github.com/midl-ai/frontend)** - AI chat interface
 - **[MIDL Protocol](https://midl.xyz)** - Bitcoin+EVM hybrid chain
 - **[@midl-js](https://github.com/midl-js)** - Official MIDL SDK
 
@@ -523,7 +523,7 @@ Special thanks to:
 ![Node.js](https://img.shields.io/badge/Node.js-18+-green)
 ![MCP](https://img.shields.io/badge/MCP-1.26-purple)
 
-[Website](https://midl-ai.xyz) • [Documentation](https://midl-ai.xyz/docs/mcp-server) • [GitHub](https://github.com/midl-ai/midl-mcp-server)
+[Website](https://midl-ai.xyz) • [Documentation](https://midl-ai.xyz/docs/mcp-server) • [GitHub](https://github.com/midl-ai/mcp-server)
 
 **MIDL MCP Server: Bring AI to Your Blockchain**
 
