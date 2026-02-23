@@ -5,7 +5,7 @@
 
 import { z } from 'zod';
 import { getAddress, keccak256, toHex, hexToBytes } from 'viem';
-import { secp256k1 } from '@noble/curves/secp256k1';
+import { secp256k1 } from '@noble/curves/secp256k1.js';
 import { ToolBase, type ToolConfig } from '../base/tool-base.js';
 import type { MidlWalletClient } from '../../wallet.js';
 import { type ToolResponse, success, error, ErrorCode } from '../../types.js';
