@@ -23,14 +23,14 @@
 
 The MIDL MCP Server brings full MIDL Protocol capabilities to your AI assistant. Install once, and Claude (or any MCP client) can:
 
-- 🚀 Deploy smart contracts with Solidity templates
-- 💰 Check balances on both Bitcoin L1 and EVM L2
-- 🔄 Bridge BTC between L1 and L2
-- 📜 Manage Bitcoin Runes (etch, transfer, bridge to ERC20)
-- 📤 Transfer tokens and native assets
-- 📊 Read contract state and event logs
-- ⚙️ Query network info and system contracts
-- 🔧 And 20+ more operations
+- Deploy smart contracts with Solidity templates
+- Check balances on both Bitcoin L1 and EVM L2
+- Bridge BTC between L1 and L2
+- Manage Bitcoin Runes (etch, transfer, bridge to ERC20)
+- Transfer tokens and native assets
+- Read contract state and event logs
+- Query network info and system contracts
+- And 20+ more operations
 
 All through natural conversation in Claude Desktop or Cursor.
 
@@ -178,7 +178,7 @@ User: Deploy an ERC20 token called MyToken with symbol MTK and 1 million initial
 
 Claude: I'll deploy that contract for you...
 [Uses midl_deploy_contract tool]
-✅ Contract deployed at 0xabc...
+Contract deployed at 0xabc...
 ```
 
 ### Check Balances
@@ -199,9 +199,9 @@ User: Bridge 0.1 BTC from L1 to L2
 
 Claude: I'll initiate the bridge transaction...
 [Uses midl_bridge_btc_to_evm]
-✅ Bridge initiated. Transaction ID: 0x...
-⏳ Waiting for confirmations...
-✅ Complete! Your L2 balance has been updated.
+Bridge initiated. Transaction ID: 0x...
+Waiting for confirmations...
+Complete! Your L2 balance has been updated.
 ```
 
 ### Manage Runes
@@ -211,7 +211,7 @@ User: Transfer 50 UNCOMMON•GOODS rune to kaspa:qr...
 
 Claude: Transferring rune...
 [Uses midl_transfer_rune]
-✅ Rune transferred. TX: abc123...
+Rune transferred. TX: abc123...
 ```
 
 ### Read Contracts
