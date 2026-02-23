@@ -32,6 +32,7 @@
     "@midl/executor": "^3.0.2",
     "@midl/node": "^3.0.2",
     "@modelcontextprotocol/sdk": "^1.26.0",
+    "@noble/curves": "^2.0.1",
     "dotenv": "^17.3.1",
     "express": "^5.2.1",
     "solc": "^0.8.34",
